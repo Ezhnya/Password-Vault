@@ -45,7 +45,9 @@ PasswordVault_Ezhnya/
 ├─ requirements.txt
 ├─ README.md
 └─ LICENSE
+## Author
 
+Developed with by Ezhnya [GitHub](https://github.com/Ezhnya) | [Telegram Channel](https://t.me/+2MllMZSL7EQyNDA6)
 
 ## License
 MIT License © Ezhnya
