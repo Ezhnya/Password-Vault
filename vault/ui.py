@@ -20,7 +20,7 @@ class LoginDialog(QDialog):
         self.setWindowTitle("Unlock Vault")
         layout = QVBoxLayout(self)
 
-        self.info = QLabel("Введіть головний пароль")
+        self.info = QLabel("Enter master password")
         self.password = QLineEdit()
         self.password.setEchoMode(QLineEdit.Password)
         layout.addWidget(self.info)
@@ -49,11 +49,11 @@ class EntryDialog(QDialog):
         self.ed_pass = QLineEdit()
         self.ed_pass.setEchoMode(QLineEdit.Password)
 
-        form.addRow("Назва*", self.ed_name)
-        form.addRow("Логін", self.ed_user)
+        form.addRow("Name*", self.ed_name)
+        form.addRow("Username", self.ed_user)
         form.addRow("URL", self.ed_url)
-        form.addRow("Нотатки", self.ed_notes)
-        form.addRow("Пароль*", self.ed_pass)
+        form.addRow("Notes", self.ed_notes)
+        form.addRow("Password*", self.ed_pass)
         layout.addLayout(form)
 
         # generator
@@ -69,12 +69,12 @@ class EntryDialog(QDialog):
         self.cb_digits.setChecked(True)
         self.cb_symbols = QCheckBox("!@#")
         self.cb_symbols.setChecked(True)
-        self.cb_amb = QCheckBox("без схожих")
+        self.cb_amb = QCheckBox("no similar")
         self.cb_amb.setChecked(True)
-        btn_gen = QPushButton("Згенерувати")
+        btn_gen = QPushButton("Generate")
         btn_gen.clicked.connect(self._generate)
 
-        for w in [QLabel("Довжина"), self.sp_len, self.cb_upper, self.cb_lower, self.cb_digits, self.cb_symbols, self.cb_amb, btn_gen]:
+        for w in [QLabel("Length"), self.sp_len, self.cb_upper, self.cb_lower, self.cb_digits, self.cb_symbols, self.cb_amb, btn_gen]:
             gen_box.addWidget(w)
         layout.addLayout(gen_box)
 
@@ -118,15 +118,15 @@ class MainWindow(QMainWindow):
         self.conn = db.connect()
 
         self.table = QTableWidget(0, 5)
-        self.table.setHorizontalHeaderLabels(["Назва", "Логін", "URL", "Створено", "Оновлено"])
+        self.table.setHorizontalHeaderLabels(["Name", "Username", "URL", "Created", "Updated"])
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.table.doubleClicked.connect(self.edit_selected)
 
-        btn_add = QPushButton("Додати")
-        btn_edit = QPushButton("Редагувати")
-        btn_del = QPushButton("Видалити")
+        btn_add = QPushButton("Add")
+        btn_edit = QPushButton("Edit")
+        btn_del = QPushButton("Delete")
         btn_copy = QPushButton("Copy")
         btn_add.clicked.connect(self.add_entry)
         btn_edit.clicked.connect(self.edit_selected)
@@ -172,11 +172,11 @@ class MainWindow(QMainWindow):
         return int(id_)
 
     def add_entry(self):
-        dlg = EntryDialog(self, "Додати запис")
+        dlg = EntryDialog(self, "Add Entry")
         if dlg.exec() == QDialog.Accepted:
             data = dlg.get_data()
             if not data["name"] or not data["password"]:
-                QMessageBox.warning(self, "Помилка", "Назва і Пароль обов'язкові.")
+                QMessageBox.warning(self, "Error", "Name and Password are required.")
                 return
             nonce, blob, _ = crypto.encrypt(self.key, data["password"].encode("utf-8"))
             db.add_entry(self.conn, data["name"], data["username"], data["url"], data["notes"], nonce, blob)
@@ -191,7 +191,7 @@ class MainWindow(QMainWindow):
         try:
             password = crypto.decrypt(self.key, nonce, blob).decode("utf-8")
         except Exception:
-            QMessageBox.critical(self, "Помилка", "Не вдалося розшифрувати запис.")
+            QMessageBox.critical(self, "Error", "Failed to decrypt entry.")
             return
         # read current visible row data
         row = self.table.currentRow()
@@ -202,11 +202,11 @@ class MainWindow(QMainWindow):
             "notes": "",  # notes aren't shown in table; keep empty
             "password": password,
         }
-        dlg = EntryDialog(self, "Редагувати запис", data=data)
+        dlg = EntryDialog(self, "Edit Entry", data=data)
         if dlg.exec() == QDialog.Accepted:
             new = dlg.get_data()
             if not new["name"] or not new["password"]:
-                QMessageBox.warning(self, "Помилка", "Назва і Пароль обов'язкові.")
+                QMessageBox.warning(self, "Error", "Name and Password are required.")
                 return
             nonce, blob, _ = crypto.encrypt(self.key, new["password"].encode("utf-8"))
             db.update_entry(self.conn, id_, new["name"], new["username"], new["url"], new["notes"], nonce, blob)
@@ -216,7 +216,7 @@ class MainWindow(QMainWindow):
         id_ = self._selected_id()
         if not id_:
             return
-        if QMessageBox.question(self, "Видалити", "Видалити вибраний запис?") == QMessageBox.Yes:
+        if QMessageBox.question(self, "Delete", "Delete selected entry?") == QMessageBox.Yes:
             db.delete_entry(self.conn, id_)
             self.load_entries()
 
@@ -228,10 +228,10 @@ class MainWindow(QMainWindow):
         try:
             password = crypto.decrypt(self.key, nonce, blob).decode("utf-8")
         except Exception:
-            QMessageBox.critical(self, "Помилка", "Не вдалося розшифрувати запис.")
+            QMessageBox.critical(self, "Error", "Failed to decrypt entry.")
             return
         QApplication.clipboard().setText(password, mode=QClipboard.Clipboard)
-        QMessageBox.information(self, "Скопійовано", "Пароль у буфері обміну. Він буде очищений через 20 сек.")
+        QMessageBox.information(self, "Copied", "Password in clipboard. It will be cleared in 20 seconds.")
         # clear clipboard after 20 seconds in another thread
         def clear_clip():
             time.sleep(20)
@@ -271,6 +271,6 @@ def unlock_or_init() -> Optional[bytes]:
             conn.close()
             return key
         else:
-            QMessageBox.critical(None, "Помилка", "Невірний головний пароль.")
+            QMessageBox.critical(None, "Error", "Invalid master password.")
             conn.close()
             return None
