@@ -20,11 +20,7 @@ Password Vault is a simple **local password manager** built with **PySide6**. It
 
 
 ## Usage
-
-
 Run the application:
-Копіювати
-Редагувати
 python main.py
 
 - On first launch, you will be asked to set a master password.
